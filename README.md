@@ -1,14 +1,14 @@
 # Serial Communication
 
 Cross-platform command-line utility for connecting to and interacting
-with a device's serial console over a serial port.
+with a device's serial console over a serial device.
 
 ## Build and Execute
 
 ### Run locally
 
 ```sh
-cargo run -- --port=/dev/ttyUSB0 --baudrate 115200
+cargo run -- --device=/dev/ttyUSB0 --baudrate 115200
 ```
 
 ### Build Release
