@@ -3,6 +3,8 @@
 Cross-platform command-line utility for connecting to and interacting
 with a device's serial console over a serial device.
 
+![serio-cli](docs/serio-cli.png)
+
 ## Build and Execute
 
 ### Run locally
