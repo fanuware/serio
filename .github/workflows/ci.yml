@@ -1,0 +1,95 @@
+name: ci
+
+on:
+  push:
+    branches: ["*"]
+  pull_request:
+    branches: ["main"]
+  release:
+    types: [published]
+
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build
+        run: cargo build --verbose
+      - name: Run tests
+        run: cargo test --verbose
+
+  build-linux:
+    runs-on: ubuntu-latest
+    needs: build-test
+    strategy:
+      matrix:
+        target: [x86_64-unknown-linux-musl, aarch64-unknown-linux-musl]
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Install Rust
+        run: |
+          rustup install stable
+          cargo install cross
+      - name: Build release with cross
+        run: cross build --release --target ${{ matrix.target }}
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: serio-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/serio
+
+  build-windows:
+    runs-on: ubuntu-latest
+    needs: build-test
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Install Rust target for Windows
+        run: rustup target add x86_64-pc-windows-gnu
+      - name: Install mingw-w64 (cross-compilation)
+        run: sudo apt-get update && sudo apt-get install -y mingw-w64
+      - name: Build Windows release
+        run: cargo build --release --target x86_64-pc-windows-gnu --verbose
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: serio-x86_64-pc-windows-gnu
+          path: target/x86_64-pc-windows-gnu/release/serio.exe
+
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    needs:
+      - build-linux
+      - build-windows
+    if: github.event_name == 'release' && github.event.action == 'published'
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Package artifacts
+        run: |
+          mkdir -p dist
+          for dir in artifacts/serio-*linux*; do
+            name=$(basename "$dir")
+            tar -C "$dir" -czf "dist/$name.tar.gz" .
+          done
+          for dir in artifacts/serio-*windows*; do
+            name=$(basename "$dir")
+            (cd "$dir" && zip -9 -r "../../dist/$name.zip" .)
+          done
+      - name: Upload all artifacts to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
