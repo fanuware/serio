@@ -5,7 +5,7 @@ with a device's serial console over a serial device.
 
 ![serio-cli](docs/serio-cli.png)
 
-## Build and Execute
+## Build and execute
 
 ### Run locally
 
@@ -13,16 +13,16 @@ with a device's serial console over a serial device.
 cargo run -- --device=/dev/ttyUSB0 --baudrate 115200
 ```
 
-### Build Release
+### Build release
 
 ```sh
 cargo build --release
 cargo build --target x86_64-pc-windows-gnu --release
 ```
 
-### Use Container
+### Use container
 
 ```sh
-docker build -t rust-build .
+docker build -t rust-build ./container
 docker run -v=$(pwd):/src -it rust-build bash
 ```
